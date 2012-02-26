@@ -1,9 +1,12 @@
 use std;
-use time;
 use timelib;
-import timelib::time::*;
 
 fn main () {
-	let t = get_time ();
-	let time = localtime (t);
+	let tm = timelib::time::gmtime ();
+	std::io::println (
+		#fmt (
+			"%d:%d:%d [%d/%d/%d]",
+			tm.hour, tm.min, tm.sec, 
+			tm.day, tm.mon, tm.year
+		));
 }
