@@ -1,8 +1,13 @@
-#[link(name = "time", vers = "1.0")];
+#[link(name = "timelib", vers = "1.0")];
 mod time {
 
-	export getTime, time;
-
+	export time_t, time;
+	export localtime, gmtime;
+	export get_localtime, get_gmtime, get_time;
+	
+	/**
+	 * The tm struct in C
+	 */
 	type tm = {
 		mutable tm_sec : ctypes::c_int,
 		mutable tm_min : ctypes::c_int,
@@ -14,25 +19,81 @@ mod time {
 		mutable tm_year : ctypes::c_int,
 		mutable tm_isdst : ctypes::c_int
 	};
-
+	
+	/**
+	 * New time struct 
+	 */
 	type time = {
 		sec : int,
 		min : int,
-			hour : int,
+		hour : int,
 		day : int,
 		mon : int,
-		year : int
+		year : int,
 	};
-
+	
+	/** 
+	 * The libc time_t type
+	 */
+	type time_t = ctypes::c_int;
+	
+	/**
+	 * Libc
+	 */
 	#[nolink]
 	native mod libc {
- 		fn time (timer : *()) -> ctypes::long;
-		fn localtime (timer : *ctypes::long) -> *tm;
+		fn gmtime (timer : *time_t) -> *tm;
+ 		fn time (timer : *time_t) -> time_t;
+		fn localtime (timer : *time_t) -> *tm;
 	}
 
-	fn getTime () -> time unsafe {
-		let t = libc::time (ptr::null());
-		let tm = libc::localtime (ptr::addr_of (t));
+	/**
+	 * Binding for libc::time 
+	 */
+	fn time (timer : *time_t) -> time_t unsafe {
+		ret libc::time (timer);
+	}
+
+	/**
+	 * Simplify time 
+	 */
+	fn get_time () -> time_t unsafe {
+		ret libc::time (ptr::null ());
+	}
+	
+	/**
+	 * Binding for libc::gmtime 
+	 */
+	fn gmtime (timer : time_t) -> time unsafe {
+		let tm = libc::gmtime (ptr::addr_of (timer));
+		ret tm_to_time (tm);
+	}
+
+	/**
+	 * Binding for libc::localtime ()
+	 */
+	fn localtime (timer : time_t) -> time unsafe {
+		let tm = libc::localtime (ptr::addr_of (timer));
+		ret tm_to_time (tm);
+	}
+	
+	/**
+	 * Simplify localtime 
+	 */
+	fn get_localtime () -> time unsafe {
+		let t = time (ptr::null ());
+		ret localtime (t);
+	}
+
+	fn get_gmtime () -> time unsafe {
+		let t = time (ptr::null ());
+		ret gmtime (t);
+	}
+	
+	/** 
+	 * Convert a libc::tm into time
+	 */
+	fn tm_to_time (tm : *tm) -> time unsafe {
 		ret {	
 			sec : (*tm).tm_sec as int,
 			min : (*tm).tm_min as int,
